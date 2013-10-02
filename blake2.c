@@ -21,7 +21,7 @@
  */
 /*
  *  blake2_bind.c
- *  Created by Masatoshi Teruya on 13/05/17.
+ *  Created by Masatoshi Teruya on 13/10/02.
  */
 
 #include <stdlib.h>
