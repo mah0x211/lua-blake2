@@ -76,7 +76,7 @@ static const char HEX_CHR[] = "0123456789abcdef";
     uint8_t out[BLAKE2B_OUTBYTES]; \
     \
     luaL_argcheck( L, keylen < BLAKE2B_KEYBYTES, 2, \
-                  #fn " key must be less than 32 bytes" ); \
+                  #fn " key must be less than 64 bytes" ); \
     \
     if( gethash( fn, out, in, key, BLAKE2B_OUTBYTES, inlen, keylen ) ){ \
         luaL_error( L, "failed to " #fn ": %s", strerror(errno) ); \
