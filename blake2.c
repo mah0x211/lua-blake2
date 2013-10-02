@@ -68,7 +68,7 @@ typedef struct {
     \
     getargs( L, args, BLAKE2S_KEYBYTES, #fn " key must be less than 32 bytes" ); \
     if( gethash( fn, out, args.in, args.key, BLAKE2S_OUTBYTES, args.inlen, args.keylen ) ){ \
-        luaL_error( L, "failed to " #fn ": %s", strerror(errno) ); \
+        luaL_error( L, "failed to " #fn ); \
     } \
     else { \
         push2hex( L, out, BLAKE2S_OUTBYTES ); \
@@ -82,7 +82,7 @@ typedef struct {
     \
     getargs( L, args, BLAKE2B_KEYBYTES, #fn " key must be less than 64 bytes" ); \
     if( gethash( fn, out, args.in, args.key, BLAKE2B_OUTBYTES, args.inlen, args.keylen ) ){ \
-        luaL_error( L, "failed to " #fn ": %s", strerror(errno) ); \
+        luaL_error( L, "failed to " #fn ); \
     } \
     else { \
         push2hex( L, out, BLAKE2B_OUTBYTES ); \
