@@ -34,6 +34,13 @@
 
 static const char HEX_CHR[] = "0123456789abcdef";
 
+typedef struct {
+    size_t inlen;
+    const char *in;
+    const char *key;
+    size_t keylen;
+} b2lua_simple_t;
+
 #define push2hex(L,result,len) do { \
     char digest[len*2]; \
     char *hd = digest; \
@@ -49,17 +56,18 @@ static const char HEX_CHR[] = "0123456789abcdef";
 
 #define gethash(fn,o,i,k,ol,il,kl)  (fn(o,i,k,ol,il,kl))
 
+#define getargs(L,args,keymax,msg) do { \
+    args.in = luaL_checklstring( L, 1, &args.inlen ); \
+    args.key = luaL_checklstring( L, 2, &args.keylen ); \
+    luaL_argcheck( L, args.keylen < keymax, 2, msg); \
+}while(0)
+
 #define push2s(L,fn)({ \
-    size_t inlen = 0; \
-    const char *in = luaL_checklstring( L, 1, &inlen ); \
-    size_t keylen = 0; \
-    const char *key = luaL_checklstring( L, 2, &keylen ); \
     uint8_t out[BLAKE2S_OUTBYTES]; \
+    b2lua_simple_t args; \
     \
-    luaL_argcheck( L, keylen < BLAKE2S_KEYBYTES, 2, \
-                  #fn " key must be less than 32 bytes" ); \
-    \
-    if( gethash( fn, out, in, key, BLAKE2S_OUTBYTES, inlen, keylen ) ){ \
+    getargs( L, args, BLAKE2S_KEYBYTES, #fn " key must be less than 32 bytes" ); \
+    if( gethash( fn, out, args.in, args.key, BLAKE2S_OUTBYTES, args.inlen, args.keylen ) ){ \
         luaL_error( L, "failed to " #fn ": %s", strerror(errno) ); \
     } \
     else { \
@@ -69,16 +77,11 @@ static const char HEX_CHR[] = "0123456789abcdef";
 })
 
 #define push2b(L,fn)({ \
-    size_t inlen = 0; \
-    const char *in = luaL_checklstring( L, 1, &inlen ); \
-    size_t keylen = 0; \
-    const char *key = luaL_checklstring( L, 2, &keylen ); \
     uint8_t out[BLAKE2B_OUTBYTES]; \
+    b2lua_simple_t args; \
     \
-    luaL_argcheck( L, keylen < BLAKE2B_KEYBYTES, 2, \
-                  #fn " key must be less than 64 bytes" ); \
-    \
-    if( gethash( fn, out, in, key, BLAKE2B_OUTBYTES, inlen, keylen ) ){ \
+    getargs( L, args, BLAKE2B_KEYBYTES, #fn " key must be less than 64 bytes" ); \
+    if( gethash( fn, out, args.in, args.key, BLAKE2B_OUTBYTES, args.inlen, args.keylen ) ){ \
         luaL_error( L, "failed to " #fn ": %s", strerror(errno) ); \
     } \
     else { \
