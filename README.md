@@ -6,6 +6,20 @@ BLAKE2 lua binding.
 
 - libb2-0.9 - https://blake2.net/
 
+## Installation
+
+```sh
+luarocks install --from=http://mah0x211.github.io/rocks/ blake2
+```
+
+or 
+
+```sh
+git clone https://github.com/mah0x211/lua-blake2.git
+cd lua-blake2
+luarocks make
+```
+
 
 ## Functions
 
