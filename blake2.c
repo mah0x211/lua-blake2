@@ -32,14 +32,8 @@
 #include <lualib.h>
 #include <blake2.h>
 
-static const char HEX_CHR[] = "0123456789abcdef";
 
-typedef struct {
-    size_t inlen;
-    const char *in;
-    const char *key;
-    size_t keylen;
-} b2lua_simple_t;
+static const char HEX_CHR[] = "0123456789abcdef";
 
 #define push2hex(L,result,len) do { \
     char digest[len*2]; \
@@ -54,98 +48,79 @@ typedef struct {
     lua_pushstring( L, digest ); \
 }while(0)
 
-#define gethash(fn,o,i,k,ol,il,kl)  (fn(o,i,k,ol,il,kl))
 
-#define getargs(L,args,keymax,msg) do { \
-    args.in = luaL_checklstring( L, 1, &args.inlen ); \
-    args.key = luaL_checklstring( L, 2, &args.keylen ); \
-    luaL_argcheck( L, args.keylen < keymax, 2, msg); \
+#define b2_lua( L, fn, maxklen, maxolen ) do { \
+    int argc = lua_gettop( L ); \
+    uint8_t out[maxolen] = {0}; \
+    size_t ilen = 0; \
+    const char *in = NULL; \
+    size_t klen = 0; \
+    const char *key = NULL; \
+    int olen = maxolen; \
+    if( argc > 3 ){ argc = 3; } \
+    \
+    in = luaL_checklstring( L, 1, &ilen ); \
+    switch( argc ){ \
+        case 3: \
+            if( !lua_isnoneornil( L, 3 ) ){ \
+                olen = luaL_checkint( L, 3 ); \
+                luaL_argcheck( L, olen > 0 && olen <= maxolen, 3, \
+                               "output length must be 1 to " #maxolen " bytes" ); \
+            } \
+        case 2: \
+            if( !lua_isnoneornil( L, 2 ) ){ \
+                key = luaL_checklstring( L, 2, &klen ); \
+                luaL_argcheck( L, klen <= maxklen, 2, \
+                               "key length must be less than " #maxklen " bytes" ); \
+            } \
+        break; \
+    } \
+    if( fn( out, in, key, (size_t)olen, ilen, klen ) ){ \
+        lua_pushnil( L ); \
+        lua_pushstring( L, "failed to " #fn ); \
+        return 2; \
+    } \
+    push2hex( L, out, olen ); \
+    return 1; \
 }while(0)
 
-#define push2s(L,fn)({ \
-    uint8_t out[BLAKE2S_OUTBYTES]; \
-    b2lua_simple_t args; \
-    \
-    getargs( L, args, BLAKE2S_KEYBYTES, #fn " key must be less than 32 bytes" ); \
-    if( gethash( fn, out, args.in, args.key, BLAKE2S_OUTBYTES, args.inlen, args.keylen ) ){ \
-        luaL_error( L, "failed to " #fn ); \
-    } \
-    else { \
-        push2hex( L, out, BLAKE2S_OUTBYTES ); \
-    } \
-    1; \
-})
 
-#define push2b(L,fn)({ \
-    uint8_t out[BLAKE2B_OUTBYTES]; \
-    b2lua_simple_t args; \
-    \
-    getargs( L, args, BLAKE2B_KEYBYTES, #fn " key must be less than 64 bytes" ); \
-    if( gethash( fn, out, args.in, args.key, BLAKE2B_OUTBYTES, args.inlen, args.keylen ) ){ \
-        luaL_error( L, "failed to " #fn ); \
-    } \
-    else { \
-        push2hex( L, out, BLAKE2B_OUTBYTES ); \
-    } \
-    1; \
-})
-
-static int blake2s_lua( lua_State *L ){
-    return push2s( L, blake2s );
+static int b2s_lua( lua_State *L ){
+    b2_lua( L, blake2s, 32, 32 );
 }
 
-static int blake2sp_lua( lua_State *L ){
-    return push2s( L, blake2sp );
+static int b2sp_lua( lua_State *L ){
+    b2_lua( L, blake2sp, 32, 32 );
 }
 
-static int blake2b_lua( lua_State *L ){
-    return push2b( L, blake2b );
+static int b2b_lua( lua_State *L ){
+    b2_lua( L, blake2b, 64, 64 );
 }
 
-static int blake2bp_lua( lua_State *L ){
-    return push2b( L, blake2bp );
+static int b2bp_lua( lua_State *L ){
+    b2_lua( L, blake2bp, 64, 64 );
 }
 
-// make error
-static int const_newindex( lua_State *L ){
-    return luaL_error( L, "attempting to change protected module" );
-}
 
 LUALIB_API int luaopen_blake2( lua_State *L )
 {
-    struct luaL_Reg funcs[] = {
-        { "blake2s", blake2s_lua },
-        { "blake2sp", blake2sp_lua },
-        { "blake2b", blake2b_lua },
-        { "blake2bp", blake2bp_lua },
+    struct luaL_Reg method[] = {
+        { "s", b2s_lua },
+        { "sp", b2sp_lua },
+        { "b", b2b_lua },
+        { "bp", b2bp_lua },
         { NULL, NULL }
     };
-    int i = 0;
-    
-    // create protected-table
+    struct luaL_Reg *ptr = method;
+
     lua_newtable( L );
-    // create __metatable
-    lua_newtable( L );
-    // create substance
-    lua_pushstring( L, "__index" );
-    lua_newtable( L );
-    
-    // set functions
-    for( i = 0; funcs[i].name; i++ ){ 
-        lua_pushstring( L, funcs[i].name );
-        lua_pushcfunction( L, funcs[i].func );
+    do {
+        lua_pushstring( L, ptr->name );
+        lua_pushcfunction( L, ptr->func );
         lua_rawset( L, -3 );
-    }
-    
-    // set substance to __metable.__index field
-    lua_rawset( L, -3 );
-    // set __newindex function to __metable.__newindex filed
-    lua_pushstring( L, "__newindex" );
-    lua_pushcfunction( L, const_newindex );
-    lua_rawset( L, -3 );
-    // convert protected-table to metatable
-    lua_setmetatable( L, -2 );
-    
+        ptr++;
+    } while( ptr->name );
+
     return 1;
 }
 
