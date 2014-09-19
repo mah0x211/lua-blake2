@@ -23,7 +23,7 @@ luarocks make
 
 ## Functions
 
-### blake2.<s / sp / b / bp>( data [, key [, digest_length] ] )
+### blake2.\<s / sp / b / bp>( data [, key [, digest_length] ] )
 
 returns a hexadecimal string of BLAKE2 hash encoded value .
 
