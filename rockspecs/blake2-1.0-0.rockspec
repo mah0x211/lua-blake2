@@ -1,7 +1,8 @@
 package = "blake2"
 version = "1.0-0"
 source = {
-    url = "git://github.com/mah0x211/lua-blake2.git"
+    url = "git://github.com/mah0x211/lua-blake2.git",
+    tag = "v1.0.0"
 }
 description = {
     summary = "blake2 binding for lua",
