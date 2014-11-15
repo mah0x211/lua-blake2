@@ -17,7 +17,7 @@ or
 ```sh
 git clone https://github.com/mah0x211/lua-blake2.git
 cd lua-blake2
-luarocks make
+luarocks make rockspecs/blake2-<version>.rockspec
 ```
 
 
