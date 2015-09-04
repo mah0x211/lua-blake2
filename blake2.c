@@ -63,7 +63,7 @@ static const char HEX_CHR[] = "0123456789abcdef";
     switch( argc ){ \
         case 3: \
             if( !lua_isnoneornil( L, 3 ) ){ \
-                olen = luaL_checkint( L, 3 ); \
+                olen = (int)luaL_checkinteger( L, 3 ); \
                 luaL_argcheck( L, olen > 0 && olen <= maxolen, 3, \
                                "output length must be 1 to " #maxolen " bytes" ); \
             } \
